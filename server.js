@@ -214,6 +214,7 @@ app.get('/api/products', async (req, res) => {
         p.salePrice,
         p.stockAmount,
         p.productTypeID,
+        p.description,
         pt.productType
       FROM product p
       LEFT JOIN productType pt ON p.productTypeID = pt.productTypeID
@@ -247,6 +248,7 @@ app.get('/api/products/:id', async (req, res) => {
         p.salePrice,
         p.stockAmount,
         p.productTypeID,
+        p.description,
         pt.productType
       FROM product p
       LEFT JOIN productType pt ON p.productTypeID = pt.productTypeID
@@ -277,8 +279,8 @@ app.get('/api/products/:id', async (req, res) => {
 // Create new product
 app.post('/api/products', async (req, res) => {
   try {
-    const { productName, totalCost, salePrice, stockAmount, productTypeID } = req.body;
-    
+    const { productName, totalCost, salePrice, stockAmount, description, productTypeID } = req.body;
+
     if (!productName || !productTypeID) {
       return res.status(400).json({
         success: false,
@@ -300,8 +302,8 @@ app.post('/api/products', async (req, res) => {
     }
     
     const [result] = await promisePool.execute(
-      'INSERT INTO product (productName, totalCost, salePrice, stockAmount, productTypeID) VALUES (?, ?, ?, ?, ?)',
-      [productName, totalCost || 0, salePrice || 0, stockAmount || 0, productTypeID]
+      'INSERT INTO product (productName, totalCost, salePrice, stockAmount, productTypeID, description) VALUES (?, ?, ?, ?, ?, ?)',
+      [productName, totalCost || 0, salePrice || 0, stockAmount || 0, productTypeID, description || '']
     );
     
     res.status(201).json({
@@ -323,8 +325,8 @@ app.post('/api/products', async (req, res) => {
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { productName, totalCost, salePrice, stockAmount, productTypeID } = req.body;
-    
+    const { productName, totalCost, salePrice, stockAmount, description, productTypeID } = req.body;
+
     // Build dynamic update query
     const updates = [];
     const values = [];
@@ -345,7 +347,11 @@ app.put('/api/products/:id', async (req, res) => {
       updates.push('stockAmount = ?');
       values.push(stockAmount);
     }
-    if (productTypeID !== undefined) {  
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+    if (productTypeID !== undefined) {
       // Verify product type exists
       const [typeCheck] = await promisePool.execute(
         'SELECT productTypeID FROM productType WHERE productTypeID = ?',
@@ -490,6 +496,7 @@ app.get('/api/products/search/:name', async (req, res) => {
         p.salePrice,
         p.stockAmount,
         p.productTypeID,
+        p.description,
         pt.productType
       FROM product p
       LEFT JOIN productType pt ON p.productTypeID = pt.productTypeID
@@ -524,6 +531,7 @@ app.get('/api/products/by-type/:typeId', async (req, res) => {
         p.salePrice,
         p.stockAmount,
         p.productTypeID,
+        p.description,
         pt.productType
       FROM product p
       LEFT JOIN productType pt ON p.productTypeID = pt.productTypeID
@@ -558,6 +566,7 @@ app.get('/api/products/low-stock/:threshold?', async (req, res) => {
         p.salePrice,
         p.stockAmount,
         p.productTypeID,
+        p.description,
         pt.productType
       FROM product p
       LEFT JOIN productType pt ON p.productTypeID = pt.productTypeID
@@ -684,12 +693,12 @@ const startServer = async () => {
     }
     
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📡 API available at http://localhost:${PORT}`);
-      console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+      console.log(`Server running on port ${PORT}`);
+      console.log(`API available at http://localhost:${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
